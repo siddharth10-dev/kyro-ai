@@ -2,7 +2,9 @@ from fastapi import FastAPI
 import uvicorn
 from schemas.incident import Incident
 from agents.alert_agent import AlertAgent
+from agents.investigen import InvestigationAgent
 alert_agent = AlertAgent()
+investigation_agent = InvestigationAgent()
 
 class SentinelAI(FastAPI):
     def __init__(self):
@@ -23,7 +25,8 @@ def log_incident(incident: Incident):
 
     return {
         "status": "classified",
-        "analysis": result
+        "analysis": result,
+        "investigation": investigation_agent.investigate(incident)
     }
 
 
