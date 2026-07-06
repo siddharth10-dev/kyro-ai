@@ -3,8 +3,11 @@ import uvicorn
 from schemas.incident import Incident
 from agents.alert_agent import AlertAgent
 from agents.investigen import InvestigationAgent
+from agents.root_cause_agent import RootCauseAgent
+
 alert_agent = AlertAgent()
 investigation_agent = InvestigationAgent()
+root_cause_agent = RootCauseAgent()
 
 class SentinelAI(FastAPI):
     def __init__(self):
@@ -22,12 +25,15 @@ def read_root():
 def log_incident(incident: Incident):
 
     result = alert_agent.classify(incident)
+    investigation_result = investigation_agent.investigate(incident)
 
     return {
         "status": "classified",
         "analysis": result,
-        "investigation": investigation_agent.investigate(incident)
+        "investigation": investigation_result,
+        "root_cause": root_cause_agent.analyze(investigation_result)
     }
+
 
 
 
