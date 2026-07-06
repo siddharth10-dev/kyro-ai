@@ -4,10 +4,12 @@ from schemas.incident import Incident
 from agents.alert_agent import AlertAgent
 from agents.investigen import InvestigationAgent
 from agents.root_cause_agent import RootCauseAgent
+from agents.runbook_agent import RunbookAgent
 
 alert_agent = AlertAgent()
 investigation_agent = InvestigationAgent()
 root_cause_agent = RootCauseAgent()
+runbook_agent = RunbookAgent()
 
 class SentinelAI(FastAPI):
     def __init__(self):
@@ -26,12 +28,15 @@ def log_incident(incident: Incident):
 
     result = alert_agent.classify(incident)
     investigation_result = investigation_agent.investigate(incident)
+    root_cause_result = root_cause_agent.analyze(investigation_result)
+    runbook_result = runbook_agent.retrieve(root_cause_result)
 
     return {
         "status": "classified",
         "analysis": result,
         "investigation": investigation_result,
-        "root_cause": root_cause_agent.analyze(investigation_result)
+        "root_cause": root_cause_result,
+        "runbook": runbook_result
     }
 
 

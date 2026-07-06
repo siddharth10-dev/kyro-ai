@@ -1,37 +1,38 @@
 class RootCauseAgent:
-    def analyze(self, investigation: dict) -> str:
+
+    def analyze(self, investigation):
+
         logs = investigation.get("logs", [])
         metrics = investigation.get("metrics", {})
 
-        # Check logs for known issues
+        root_cause = "Unknown issue detected"
+        confidence = 0.50
+        reasoning = []
+
         for log in logs:
-            log_lower = log.lower()
-            if "database connection timeout" in log_lower or "database timeout" in log_lower:
-                return "Database connection timeout; database might be overloaded."
-            if "database" in log_lower:
-                return "Database issue detected."
-            if "invalid token" in log_lower or "authentication" in log_lower:
-                return "Authentication/Authorization failures; invalid or expired security credentials."
-            if "500 internal server error" in log_lower:
-                return "Uncaught backend exception causing 500 Internal Server Error."
+            if "Database connection timeout" in log:
+                root_cause = (
+                    "Database connectivity issue causing service failures"
+                )
+                confidence = 0.90
+                reasoning.append(
+                    "Database timeout errors found in application logs"
+                )
 
-        # Check metrics for performance-based root causes
-        cpu = metrics.get("cpu", "")
-        latency = metrics.get("latency", "")
-        if cpu and cpu.endswith("%"):
-            try:
-                cpu_val = int(cpu.replace("%", ""))
-                if cpu_val > 90:
-                    return f"Resource saturation: High CPU utilization ({cpu})."
-            except ValueError:
-                pass
+        latency = metrics.get("latency", "0ms")
+        try:
+            latency_value = int(latency.replace("ms", ""))
+        except ValueError:
+            latency_value = 0
 
-        if latency and latency.endswith("ms"):
-            try:
-                latency_val = int(latency.replace("ms", ""))
-                if latency_val > 2000:
-                    return f"Degraded performance: Service latency is high ({latency})."
-            except ValueError:
-                pass
+        if latency_value > 2000:
+            reasoning.append(
+                "Service latency exceeded safe threshold"
+            )
+            confidence += 0.05
 
-        return "Undetermined root cause. Further manual investigation required."
+        return {
+            "root_cause": root_cause,
+            "confidence": min(confidence, 1.0),
+            "reasoning": reasoning
+        }
