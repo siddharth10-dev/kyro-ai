@@ -5,11 +5,13 @@ from agents.alert_agent import AlertAgent
 from agents.investigen import InvestigationAgent
 from agents.root_cause_agent import RootCauseAgent
 from agents.runbook_agent import RunbookAgent
+from agents.recommendation_agent import RecommendationAgent
 
 alert_agent = AlertAgent()
 investigation_agent = InvestigationAgent()
 root_cause_agent = RootCauseAgent()
 runbook_agent = RunbookAgent()
+recommendation_agent = RecommendationAgent()
 
 class SentinelAI(FastAPI):
     def __init__(self):
@@ -36,7 +38,11 @@ def log_incident(incident: Incident):
         "analysis": result,
         "investigation": investigation_result,
         "root_cause": root_cause_result,
-        "runbook": runbook_result
+        "runbook": runbook_result,
+        "recommendation": recommendation_agent.recommend(
+            root_cause_result,
+            runbook_result
+        )
     }
 
 
