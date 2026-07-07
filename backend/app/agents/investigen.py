@@ -1,5 +1,5 @@
-from tools.logs import get_logs
-from tools.metrics import get_metrics
+from app.tools.logs import get_logs
+from app.tools.metrics import get_metrics
 
 
 class InvestigationAgent:
