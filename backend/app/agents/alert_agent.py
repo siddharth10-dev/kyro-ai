@@ -1,34 +1,48 @@
+from core.llm import llm
+
+
 class AlertAgent:
+
 
     def classify(self, incident):
 
-        message = incident.message.lower()
 
-        if "500" in message:
-            category = "backend-error"
+        prompt = f"""
 
-        elif "latency" in message:
-            category = "performance"
-
-        elif "database" in message:
-            category = "database"
-
-        else:
-            category = "unknown"
+        You are an AI incident classification agent.
 
 
-        if incident.severity.lower() == "critical":
-            priority = "P1"
-
-        elif incident.severity.lower() == "high":
-            priority = "P2"
-
-        else:
-            priority = "P3"
+        Analyze this production alert:
 
 
-        return {
-            "service": incident.service,
-            "category": category,
-            "priority": priority
-        }
+        Service:
+        {incident.service}
+
+
+        Message:
+        {incident.message}
+
+
+        Severity:
+        {incident.severity}
+
+
+        Return ONLY JSON:
+
+        {{
+        "service":"",
+        "category":"",
+        "priority":"",
+        "summary":""
+        }}
+
+        """
+
+
+        response = llm.invoke(prompt)
+
+        import json
+        try:
+            return json.loads(response.content.strip())
+        except Exception:
+            return {"raw_response": response.content}
