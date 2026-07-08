@@ -46,6 +46,7 @@ def root_cause_node(state):
     print("🧠 ROOT CAUSE NODE RUNNING")
 
     result = root_agent.analyze(
+        state["incident"],
         state["investigation"]
     )
 
@@ -72,7 +73,8 @@ def recommendation_node(state):
 
     result = recommendation_agent.recommend(
         state["root_cause"],
-        state["runbook"]
+        state["runbook"],
+        state["investigation"]
     )
 
 
