@@ -1,20 +1,7 @@
-def get_logs(service_name):
+from app.tools.logs_tool import get_logs as get_logs_tool
 
-    logs = {
-
-        "payment-api": [
-            "ERROR: Database connection timeout",
-            "ERROR: Failed to process payment",
-            "500 Internal Server Error"
-        ],
-
-        "auth-api": [
-            "ERROR: Invalid token validation",
-            "Authentication failures increased"
-        ]
-    }
-
-    return logs.get(
-        service_name,
-        ["No logs found"]
-    )
+def get_logs(service_name: str) -> list[str]:
+    try:
+        return get_logs_tool.invoke({"service_name": service_name})
+    except Exception as e:
+        return [f"Error getting logs: {str(e)}"]

@@ -17,3 +17,10 @@ env/
 node_modules/
 dist/
 .env
+
+# Logs and monitoring data
+logs/
+*.log
+/logs/
+/services/checkout-service/logs/
+
