@@ -35,7 +35,7 @@ export const LodgeIncidentModal: React.FC<LodgeIncidentModalProps> = ({ isOpen, 
           if (prev < STEPS.length - 1) return prev + 1;
           return prev;
         });
-      }, 1500);
+      }, 15000); // 15s per step matches actual Ollama processing duration
     } else {
       setCurrentStepIdx(0);
     }
@@ -192,6 +192,14 @@ export const LodgeIncidentModal: React.FC<LodgeIncidentModalProps> = ({ isOpen, 
                   </div>
                 );
               })}
+            </div>
+
+            {/* Hardware Inference Alert Banner */}
+            <div className="w-full p-3.5 rounded bg-amber-950/15 border border-amber-900/30 text-amber-500 text-left flex items-start space-x-2.5">
+              <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0 animate-pulse text-amber-400" />
+              <div className="text-[11px] font-sans leading-relaxed">
+                <span className="font-bold">Hardware Performance Note:</span> Local Ollama inference on Mac CPU/GPU executes LangGraph sequentially. This multi-agent trace can take <strong>2 - 3 minutes</strong> to return. Please keep this tab active.
+              </div>
             </div>
           </div>
         )}
