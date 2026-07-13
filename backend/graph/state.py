@@ -7,3 +7,5 @@ class IncidentState(TypedDict):
     root_cause: Dict[str, Any]
     runbook: Dict[str, Any]
     recommendation: Dict[str, Any]
+    timeline: list
+

@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #090D16;
+    color: #94A3B8;
+    font-family: 'Inter', sans-serif;
+  }
+  
+  #root {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    border: none;
+    max-width: 100%;
+    text-align: left;
+  }
+}
+
+/* Custom terminal style scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0E131F;
+}
+::-webkit-scrollbar-thumb {
+  background: #1D263B;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2D3954;
+}
+
+/* Custom pulsing glows */
+@keyframes pulse-glow-amber {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+    border-color: rgba(245, 158, 11, 0.8);
+  }
+}
+
+@keyframes pulse-glow-emerald {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+    border-color: rgba(16, 185, 129, 0.8);
+  }
+}
+
+.pulse-glow-amber {
+  animation: pulse-glow-amber 2s infinite ease-in-out;
+}
+
+.pulse-glow-emerald {
+  animation: pulse-glow-emerald 2s infinite ease-in-out;
+}

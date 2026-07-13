@@ -24,9 +24,12 @@ services:
       - ./backend/app:/app/app
       - ./backend/core:/app/core
       - ./backend/graph:/app/graph
+      - ./backend/runbooks:/app/runbooks
+
     environment:
       - PROMETHEUS_URL=http://prometheus:9090
       - LOKI_URL=http://loki:3100
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/sentinel
       - OLLAMA_HOST=http://host.docker.internal:11434
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -34,6 +37,7 @@ services:
       - checkout-service
       - prometheus
       - loki
+      - postgres
 
   prometheus:
     image: prom/prometheus:latest
@@ -60,3 +64,18 @@ services:
     command: -config.file=/etc/promtail/config.yml
     depends_on:
       - loki
+
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=sentinel
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+
