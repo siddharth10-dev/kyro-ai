@@ -14,7 +14,8 @@ const STEPS = [
   '💻 Searching Loki database: extracting service error logs...',
   '🧠 Performing root cause analysis & checking Git deployment metadata...',
   '📚 Searching RAG vector database for matching playbooks...',
-  '⚡ Recommendation generated & waiting for human action...'
+  '⚡ Compiling investigation report & recommendations...',
+  '🔗 Redirecting to Incident Details for human review...'
 ];
 
 export const LodgeIncidentModal: React.FC<LodgeIncidentModalProps> = ({ isOpen, onClose }) => {
