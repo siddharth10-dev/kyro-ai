@@ -38,16 +38,16 @@ graph TD
     classDef database fill:#111827,stroke:#6366F1,stroke-width:2px,color:#fff;
 
     %% Nodes
-    User([Customer]):::client
-    Checkout[Checkout Service<br/>(API Gateway)]:::microservice
+    User(["Customer"]):::client
+    Checkout["Checkout Service<br/>(API Gateway)"]:::microservice
     
-    Prometheus[(Prometheus<br/>Metrics Engine)]:::monitoring
-    AlertManager[Alertmanager<br/>(Routing)]:::monitoring
+    Prometheus[("Prometheus<br/>Metrics Engine")]:::monitoring
+    AlertManager["Alertmanager<br/>(Routing)"]:::monitoring
     
-    KyroBackend[Kyro Backend<br/>(FastAPI)]:::kyro
-    Agents((LangGraph Agents<br/>AI Reasoning)):::kyro
-    DB[(PostgreSQL<br/>Incidents & Telemetry)]:::database
-    Frontend[Kyro Command Center<br/>(React UI)]:::kyro
+    KyroBackend["Kyro Backend<br/>(FastAPI)"]:::kyro
+    Agents(("LangGraph Agents<br/>AI Reasoning")):::kyro
+    DB[("PostgreSQL<br/>Incidents & Telemetry")]:::database
+    Frontend["Kyro Command Center<br/>(React UI)"]:::kyro
 
     %% Connections
     User -->|Initiates Request| Checkout
