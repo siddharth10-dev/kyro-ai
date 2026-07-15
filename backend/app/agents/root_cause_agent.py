@@ -1,5 +1,5 @@
 import json
-from core.llm import llm
+from core.llm import llm, clean_content
 from langchain_core.messages import SystemMessage, HumanMessage
 
 class RootCauseAgent:
@@ -40,7 +40,7 @@ Do not output any markdown formatting (like ```json), commentary, or extra text.
         ]
 
         res = llm.invoke(messages)
-        content = res.content.strip()
+        content = clean_content(res.content)
 
         try:
             return json.loads(content)

@@ -1,4 +1,4 @@
-from core.llm import llm
+from core.llm import llm, clean_content
 
 
 class AlertAgent:
@@ -43,6 +43,6 @@ class AlertAgent:
 
         import json
         try:
-            return json.loads(response.content.strip())
+            return json.loads(clean_content(response.content))
         except Exception:
             return {"raw_response": response.content}

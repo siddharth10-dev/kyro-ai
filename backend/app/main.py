@@ -1,16 +1,17 @@
 import datetime
 import logging
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
 import uvicorn
 
 from app.schemas.incident import Incident
-from graph.workflow import sentinel_graph
+from graph.workflow import kyro_graph
 from app.database import (
     init_db,
     save_incident,
     get_all_incidents,
     get_incident_by_id,
-    update_incident_status
+    update_incident_status,
+    update_incident_state
 )
 from app.agents.communication_agent import CommunicationAgent
 
@@ -19,13 +20,13 @@ logger = logging.getLogger(__name__)
 
 from fastapi.middleware.cors import CORSMiddleware
 
-class SentinelAI(FastAPI):
+class KyroAI(FastAPI):
     def __init__(self):
         super().__init__()
-        self.title = "Sentinel AI"
+        self.title = "Kyro AI"
         self.version = "1.0.0"
 
-app = SentinelAI()
+app = KyroAI()
 
 # Enable CORS for frontend requests
 app.add_middleware(
@@ -46,50 +47,83 @@ def on_startup():
 def read_root():
     return {"status": "UP"}
 
+def run_investigation(incident_id: int, initial_state: dict):
+    logger.info(f"Starting async investigation for incident {incident_id}")
+    try:
+        # Stream the LangGraph workflow
+        for event in kyro_graph.stream(initial_state):
+            # For each event emitted by a node, extract the state
+            # The event is usually a dict mapping node_name -> state
+            for node_name, state in event.items():
+                logger.info(f"Node {node_name} completed for incident {incident_id}")
+                update_incident_state(incident_id, state)
+        
+        # After loop finishes, update status to pending_approval
+        final_state = initial_state # Initial state dict is updated by reference in LangGraph? Actually stream returns states.
+        incident_dict = get_incident_by_id(incident_id)
+        timeline = list(incident_dict.get("timeline", [])) if incident_dict else []
+        time_str = datetime.datetime.now().strftime("%H:%M")
+        timeline.append(f"{time_str} Waiting for human approval")
+        
+        update_incident_status(
+            incident_id=incident_id, 
+            status="pending_approval", 
+            timeline=timeline
+        )
+    except Exception as e:
+        logger.error(f"Error in investigation task for incident {incident_id}: {e}")
+
 @app.post("/incident")
-def log_incident(incident: Incident):
+async def log_incident(request: Request, background_tasks: BackgroundTasks):
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+
+    # Parse Alertmanager payload
+    if "alerts" in payload and len(payload["alerts"]) > 0:
+        alert = payload["alerts"][0] # Take the first firing alert
+        status = alert.get("status", "firing")
+        if status != "firing":
+            return {"status": "ignored", "reason": "Alert is not firing"}
+            
+        labels = alert.get("labels", {})
+        annotations = alert.get("annotations", {})
+        
+        incident_obj = Incident(
+            service=labels.get("service", "unknown-service"),
+            message=annotations.get("summary", "Automated alert received"),
+            severity=labels.get("severity", "critical")
+        )
+    else:
+        # Fallback to direct Incident payload for testing if needed
+        try:
+            incident_obj = Incident(**payload)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Payload format not supported")
+
+    time_str = datetime.datetime.now().strftime("%H:%M")
     initial_state = {
-        "incident": incident,
+        "incident": incident_obj,
         "classification": {},
         "investigation": {},
         "root_cause": {},
         "runbook": {},
         "recommendation": {},
-        "timeline": []
+        "timeline": [f"{time_str} Alert Received from Alertmanager"],
+        "status": "investigating"
     }
     
-    # Run the graph workflow
-    result = sentinel_graph.invoke(initial_state)
+    # Save the incident with the investigating status
+    db_id = save_incident(initial_state)
     
-    # Set status to pending_approval on creation
-    result["status"] = "pending_approval"
-    
-    # Add timeline event indicating waiting for human action
-    timeline = list(result.get("timeline", []))
-    time_str = datetime.datetime.now().strftime("%H:%M")
-    timeline.append(f"{time_str} Waiting for human approval")
-    result["timeline"] = timeline
-    
-    # Save the incident with the pending status
-    db_id = save_incident(result)
+    # Run the graph workflow in background
+    background_tasks.add_task(run_investigation, db_id, initial_state)
     
     return {
-        "status": "pending_approval",
-        "incident_id": db_id,
-        "result": {
-            "incident": {
-                "service": result["incident"].service,
-                "message": result["incident"].message,
-                "severity": result["incident"].severity
-            },
-            "classification": result["classification"],
-            "investigation": result["investigation"],
-            "root_cause": result["root_cause"],
-            "runbook": result["runbook"],
-            "recommendation": result["recommendation"],
-            "timeline": result["timeline"],
-            "status": "pending_approval"
-        }
+        "status": "accepted",
+        "message": "Incident created and investigation started.",
+        "incident_id": db_id
     }
 
 @app.get("/incidents")

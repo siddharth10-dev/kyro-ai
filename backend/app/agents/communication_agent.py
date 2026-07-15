@@ -1,6 +1,6 @@
 import json
 import logging
-from core.llm import llm
+from core.llm import llm, clean_content
 from langchain_core.messages import SystemMessage, HumanMessage
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ Timeline of events:
 
         logger.info("Generating communication reports using LLM...")
         res = llm.invoke(messages)
-        content = res.content.strip()
+        content = clean_content(res.content)
 
         try:
             return json.loads(content)

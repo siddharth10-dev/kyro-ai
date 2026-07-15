@@ -1,397 +1,174 @@
-# Sentinel AI
+# Kyro
 
-## Multi-Agent AI Incident Response Platform
+<div align="center">
+  <img src="https://img.shields.io/badge/Status-Active-success" alt="Status" />
+  <img src="https://img.shields.io/badge/Platform-Enterprise-blue" alt="Platform" />
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
+</div>
 
-Sentinel AI is an AI-powered incident response system that helps engineering teams investigate production issues faster.
+<br />
 
-The platform receives alerts from monitoring systems, collects operational evidence, analyzes possible root causes, retrieves relevant recovery procedures, and generates recommended actions through a multi-agent workflow.
+**Kyro** is an Enterprise AI-powered Incident Response Platform. 
+It operates completely autonomously, bridging the gap between monitoring systems and incident resolution by leveraging Large Language Models (LLMs) and intelligent agent orchestration.
 
-It combines backend engineering, AI agents, tool calling, retrieval systems, and human-in-the-loop decision making.
-
----
-
-## System Architecture
-
-```
-Incoming Alert
-(PagerDuty / Webhook)
-
-        ↓
-
-Alert Agent
-(Normalization + Classification)
-
-        ↓
-
-Investigation Agent
-(Log, Metrics & Deployment Analysis)
-
-        ↓
-
-Root Cause Agent
-(Reasoning + Hypothesis Generation)
-
-        ↓
-
-Runbook Agent
-(Semantic Knowledge Retrieval)
-
-        ↓
-
-Recommendation Agent
-(Action Plan + Risk Analysis)
-
-        ↓
-
-Human Approval
-
-        ↓
-
-Communication Agent
-(Reports + Slack Updates)
-```
+Think of how Datadog + Prometheus + Alertmanager + PagerDuty work together. Kyro sits on top of these tools, catching alerts, running autonomous investigations, pulling logs, reading runbooks, and compiling executive resolutions before you even wake up.
 
 ---
 
-## How It Works
+## 🌟 Key Features
 
-### 1. Alert Agent
+- **Event-Driven Architecture**: Native integrations with Prometheus and Alertmanager via webhooks.
+- **Autonomous Investigation**: LangGraph-powered agents execute dynamic investigations without human intervention.
+- **Log Aggregation & Analysis**: Agents can securely fetch and analyze application logs to pinpoint root causes.
+- **Runbook Execution**: Automatically fetches relevant internal runbooks to determine the best resolution.
+- **Executive Summaries**: Drafts clear, concise incident reports and Slack messages for stakeholders.
+- **Glassmorphic UI**: A stunning, high-performance Vite + React frontend dashboard featuring real-time telemetry, skeleton loaders, and interactive components.
 
-The Alert Agent is responsible for processing incoming incidents.
+---
 
-It converts raw monitoring alerts into structured incidents by identifying:
+## 🏗 System Architecture
 
-- affected service
-- incident category
-- severity level
-- priority
+```mermaid
+graph TD
+    %% Define Styles
+    classDef client fill:#1E293B,stroke:#3B82F6,stroke-width:2px,color:#fff;
+    classDef microservice fill:#0F172A,stroke:#10B981,stroke-width:2px,color:#fff;
+    classDef monitoring fill:#374151,stroke:#F59E0B,stroke-width:2px,color:#fff;
+    classDef kyro fill:#090D16,stroke:#8B5CF6,stroke-width:3px,color:#fff;
+    classDef database fill:#111827,stroke:#6366F1,stroke-width:2px,color:#fff;
 
-Example:
+    %% Nodes
+    User([Customer]):::client
+    Checkout[Checkout Service<br/>(API Gateway)]:::microservice
+    
+    Prometheus[(Prometheus<br/>Metrics Engine)]:::monitoring
+    AlertManager[Alertmanager<br/>(Routing)]:::monitoring
+    
+    KyroBackend[Kyro Backend<br/>(FastAPI)]:::kyro
+    Agents((LangGraph Agents<br/>AI Reasoning)):::kyro
+    DB[(PostgreSQL<br/>Incidents & Telemetry)]:::database
+    Frontend[Kyro Command Center<br/>(React UI)]:::kyro
 
-Input
-
-```json
-{
-  "service": "payment-api",
-  "message": "500 errors detected after deployment",
-  "severity": "critical"
-}
-```
-
-Output
-
-```json
-{
-  "category": "backend-error",
-  "priority": "P1"
-}
+    %% Connections
+    User -->|Initiates Request| Checkout
+    Checkout -->|Emits Metrics| Prometheus
+    Prometheus -->|Threshold Breach| AlertManager
+    AlertManager -->|Webhook| KyroBackend
+    KyroBackend -->|Spawns Graph| Agents
+    Agents <-->|Fetch Logs & Runbooks| Checkout
+    Agents -->|Persists Data| DB
+    KyroBackend <-->|Real-time state| DB
+    Frontend <-->|REST / Polling| KyroBackend
 ```
 
 ---
 
-## 2. Investigation Agent
+## 🛠 Tech Stack
 
-The Investigation Agent gathers evidence required for debugging.
+- **Frontend**: React 19, Vite, TailwindCSS (Vanilla CSS config), Framer Motion, Recharts, Lucide React.
+- **Backend**: Python 3.10+, FastAPI, LangChain, LangGraph, SQLAlchemy, PostgreSQL, Uvicorn.
+- **Monitoring**: Prometheus, Alertmanager, Docker Compose.
+- **LLMs**: Gemini via `gemini-2.5-flash` / `gemini-2.0-flash` for high-speed, cost-effective reasoning.
 
-It follows an agentic reasoning workflow:
+---
 
-```
-Analyze Problem
-        ↓
-Choose Tool
-        ↓
-Execute Tool
-        ↓
-Observe Results
-        ↓
-Continue Investigation
-```
+## 📂 Project Structure
 
-Integrated tools:
-
-- Application log analysis
-- System metrics inspection
-- Database health checks
-- GitHub deployment analysis
-
-Example:
-
-```
-Incident:
-High API failures detected
-
-Investigation:
-
-Logs:
-Database connection timeout errors
-
-Metrics:
-Connection pool usage exceeded threshold
-
-Recent Deployment:
-Configuration change detected
+```bash
+kyro/
+├── backend/                  # FastAPI & LangGraph AI Backend
+│   ├── app/
+│   │   ├── api/              # REST Endpoints
+│   │   ├── core/             # AI Agent Workflow (LangGraph)
+│   │   ├── tools/            # Tools (Logs, Runbooks, Exec Summaries)
+│   │   └── database.py       # SQLAlchemy Models
+│   ├── requirements.txt      
+│   └── .env                  # Backend Secrets
+├── frontend/                 # React Command Center
+│   ├── src/
+│   │   ├── components/       # IncidentDetails, Dashboard, UI
+│   │   ├── utils/            # formatTime, api handlers
+│   │   └── pages/            # Application Views
+│   └── tailwind.config.js    
+├── services/                 # Mock Microservices
+│   └── checkout-service/     # Simulated Checkout App + Mock Endpoints
+├── prometheus.yml            # Prometheus Scraping config
+├── alertmanager.yml          # Alertmanager Webhook config
+└── docker-compose.yml        # Dockerized dependencies (Postgres, Prom, Alertmanager)
 ```
 
 ---
 
-## 3. Root Cause Agent
+## 🚀 Setup Instructions
 
-The Root Cause Agent analyzes collected evidence and identifies the most likely failure reason.
+Follow these steps to run Kyro locally for development and testing.
 
-Responsibilities:
+### 1. Prerequisites
+- Docker & Docker Compose
+- Python 3.10+
+- Node.js 18+
+- Gemini API Key
 
-- correlate multiple signals
-- generate hypotheses
-- estimate confidence levels
-- explain reasoning
-
-Example:
-
-```json
-{
-  "root_cause": "Database connection pool exhaustion after deployment configuration change",
-
-  "confidence": 0.91
-}
+### 2. Infrastructure (Docker)
+Start the foundational infrastructure including PostgreSQL, Prometheus, and Alertmanager.
+```bash
+docker-compose up -d --build
 ```
+
+### 3. Backend Setup
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+Create a `.env` file in the `backend/` directory:
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+DATABASE_URL=postgresql://localhost:5432/kyro
+```
+Run the FastAPI backend:
+```bash
+PYTHONPATH=. uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+### 4. Checkout Service (Simulated Environment)
+The checkout service provides the logs, mock metrics, and runbooks required for Kyro to investigate.
+```bash
+cd services/checkout-service
+PYTHONPATH=. ../../backend/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8001
+```
+
+### 5. Frontend Command Center
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Open `http://localhost:5173` in your browser.
 
 ---
 
-## 4. Runbook Agent
+## 🧪 Simulation & Testing
 
-The Runbook Agent provides recovery knowledge using Retrieval Augmented Generation.
+You can use the **Simulation Control Panel** inside the Frontend UI to inject faults into the `checkout-service`. 
 
-It searches previous incidents, documentation, and operational guides.
-
-Pipeline:
-
-```
-Incident Context
-
-      ↓
-
-Generate Embedding
-
-      ↓
-
-Vector Search
-
-      ↓
-
-Retrieve Similar Fixes
-
-      ↓
-
-Generate Solution Context
-```
-
-Powered by:
-
-- Vector embeddings
-- PostgreSQL
-- pgvector
-- Semantic search
+1. Navigate to the Dashboard.
+2. Click **⚡ Simulation Control Panel**.
+3. Trigger a simulation (e.g. *Database Failure*, *High Latency*, *CPU Spike*).
+4. Watch the timeline populate automatically as Prometheus catches the anomaly, alerts Kyro, and the LangGraph agents begin their investigation.
 
 ---
 
-## 5. Recommendation Agent
+## 🔮 Future Improvements
 
-The Recommendation Agent converts analysis into an actionable recovery plan.
-
-Generated output includes:
-
-- recommended fixes
-- impact assessment
-- risk level
-- rollback suggestions
-
-
-Example:
-
-```json
-{
-  "recommended_actions": [
-
-    "Increase database connection pool limit",
-
-    "Restart affected API instances",
-
-    "Monitor latency metrics"
-
-  ],
-
-  "risk": "medium"
-}
-```
+- **Jira & Slack Integration**: Add native OAuth capabilities to post directly into #incident-channels.
+- **WebSocket Streaming**: Replace rapid polling with WebSockets for true real-time event streaming from LangGraph to the frontend.
+- **Runbook Editor**: Allow SRE teams to write and manage runbooks natively within the Kyro UI.
+- **Predictive Analytics**: Use historical incident data to predict when system resources might fail before they hit critical thresholds.
 
 ---
 
-## 6. Human Approval System
-
-Sentinel AI keeps engineers in control.
-
-Before execution or communication, recommendations pass through an approval workflow.
-
-Supported actions:
-
-- Approve
-- Modify
-- Reject
-
----
-
-## 7. Communication Agent
-
-After approval, the Communication Agent generates incident reports and updates teams.
-
-Features:
-
-- Slack notifications
-- Incident summaries
-- Resolution reports
-
----
-
-# Tech Stack
-
-## Backend
-
-- Python
-- FastAPI
-- PostgreSQL
-- Redis
-- Celery
-- REST APIs
-
-## AI System
-
-- LangGraph
-- OpenAI API
-- Agentic Workflows
-- Function Calling
-- Retrieval Augmented Generation (RAG)
-- Vector Databases
-
-## Infrastructure
-
-- Docker
-- GitHub Actions
-- Cloud Deployment
-
-## Frontend
-
-- React
-- Tailwind CSS
-
-
----
-
-# Project Structure
-
-```
-sentinel-ai/
-
-
-backend/
-
- ├── app/
-
- │    ├── agents/
-
- │    │      ├── alert_agent.py
-
- │    │      ├── investigation_agent.py
-
- │    │      ├── root_cause_agent.py
-
- │    │      ├── runbook_agent.py
-
- │    │      └── recommendation_agent.py
-
-
- │    ├── tools/
-
- │    │      ├── logs.py
-
- │    │      ├── metrics.py
-
- │    │      ├── github.py
-
- │    │      └── database_health.py
-
-
- │    ├── database/
-
- │    ├── schemas/
-
- │    ├── workers/
-
- │    └── main.py
-
-
-frontend/
-
-docker-compose.yml
-
-README.md
-```
-
----
-
-# API Example
-
-Endpoint:
-
-```
-POST /incident
-```
-
-
-Request:
-
-```json
-{
-  "service": "payment-api",
-  "message": "API returning 500 errors",
-  "severity": "critical"
-}
-```
-
-
-Response:
-
-```json
-{
-  "incident_id": "INC-102",
-
-  "root_cause":
-  "Database connection exhaustion",
-
-  "confidence": 0.91,
-
-  "recommendation":
-  "Increase connection pool size and restart affected service"
-}
-```
-
----
-
-# Key Features
-
-- Multi-agent incident investigation
-- Automated root cause analysis
-- LLM-powered reasoning
-- External tool integration
-- Semantic runbook search
-- Human approval workflow
-- Automated engineering reports
-
----
-
-# Objective
-
-Sentinel AI explores how autonomous AI agents can assist Site Reliability Engineering workflows by combining production signals, reasoning models, and operational knowledge.
-
-```
-Detect → Investigate → Diagnose → Recommend → Resolve
-```
+<div align="center">
+  <b>Built for SREs, by AI.</b>
+</div>

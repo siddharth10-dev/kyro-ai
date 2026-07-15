@@ -48,7 +48,7 @@ def get_logs(service_name: str) -> list[str]:
     try:
         # Check standard mapped paths
         possible_paths = [
-            "/var/log/sentinel/checkout.log",
+            "/var/log/kyro/checkout.log",
             "../services/checkout-service/logs/checkout.log",
             "./services/checkout-service/logs/checkout.log",
             "./logs/checkout.log",

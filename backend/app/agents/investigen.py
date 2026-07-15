@@ -1,7 +1,7 @@
 import json
 import datetime
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
-from core.llm import llm
+from core.llm import llm, clean_content
 from app.tools.logs_tool import get_logs
 from app.tools.metrics_tool import get_metrics
 from app.tools.deployment_tool import get_deployment_info
@@ -74,11 +74,11 @@ Do not include any explanation, markdown blocks (like ```json), or extra text ou
                     messages.append(ToolMessage(content=json.dumps(tool_res), tool_call_id=tool_call["id"]))
             else:
                 # LLM chose not to call any tools; it has finished its analysis.
-                content = res.content.strip()
+                content = clean_content(res.content)
                 break
         
         if not content and len(messages) > 0:
-            content = messages[-1].content.strip()
+            content = clean_content(messages[-1].content)
 
         try:
             return json.loads(content)

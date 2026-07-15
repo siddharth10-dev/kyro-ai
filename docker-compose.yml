@@ -8,18 +8,18 @@ services:
     ports:
       - "8001:8001"
     volumes:
-      - ./logs:/var/log/sentinel
+      - ./logs:/var/log/kyro
     environment:
       - PORT=8001
 
-  sentinel-backend:
+  kyro-backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
-      - ./logs:/var/log/sentinel
+      - ./logs:/var/log/kyro
       - ./.git:/app/.git
       - ./backend/app:/app/app
       - ./backend/core:/app/core
@@ -29,7 +29,7 @@ services:
     environment:
       - PROMETHEUS_URL=http://prometheus:9090
       - LOKI_URL=http://loki:3100
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/sentinel
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/kyro
       - OLLAMA_HOST=http://host.docker.internal:11434
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -45,8 +45,17 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./alerts.yml:/etc/prometheus/alerts.yml
     depends_on:
       - checkout-service
+      - alertmanager
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
 
   loki:
     image: grafana/loki:2.9.2
@@ -59,7 +68,7 @@ services:
   promtail:
     image: grafana/promtail:2.9.2
     volumes:
-      - ./logs:/var/log/sentinel
+      - ./logs:/var/log/kyro
       - ./promtail-config.yaml:/etc/promtail/config.yml
     command: -config.file=/etc/promtail/config.yml
     depends_on:
@@ -70,7 +79,7 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_DB=sentinel
+      - POSTGRES_DB=kyro
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     volumes:

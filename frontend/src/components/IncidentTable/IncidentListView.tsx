@@ -109,16 +109,48 @@ export const IncidentListView: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `sentinel_incidents_export.csv`);
+    link.setAttribute('download', `kyro_incidents_export.csv`);
     link.click();
   };
 
   if (isLoading) {
     return (
-      <div className="flex-1 bg-darkBg p-8 flex flex-col justify-center items-center text-slate-400">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-sm font-medium">Loading SRE Incident logs...</p>
-      </div>
+      <main className="flex-1 bg-[#090D16] p-8 overflow-y-auto w-full max-w-7xl mx-auto space-y-8 select-none">
+        <div>
+          <div className="h-8 bg-slate-900 rounded w-48 animate-pulse mb-2"></div>
+          <div className="h-4 bg-slate-900/50 rounded w-64 animate-pulse"></div>
+        </div>
+        
+        {/* Controls skeleton */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center space-x-2 w-full md:w-auto">
+            <div className="h-10 bg-slate-900 rounded w-64 animate-pulse"></div>
+            <div className="h-10 bg-slate-900 rounded w-24 animate-pulse"></div>
+          </div>
+          <div className="h-10 bg-slate-900 rounded w-32 animate-pulse"></div>
+        </div>
+
+        {/* Table skeleton */}
+        <div className="bg-white/[0.02] border border-white/[0.08] rounded-xl overflow-hidden shadow-2xl">
+          <div className="bg-white/[0.03] px-6 py-4 border-b border-white/[0.08]">
+            <div className="h-4 bg-slate-900 rounded w-full animate-pulse"></div>
+          </div>
+          <div className="divide-y divide-white/[0.05]">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="p-6 flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-10 h-10 rounded-lg bg-slate-900 animate-pulse"></div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-slate-900 rounded w-32 animate-pulse"></div>
+                    <div className="h-3 bg-slate-900/50 rounded w-24 animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="h-6 bg-slate-900 rounded w-20 animate-pulse"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
     );
   }
 
@@ -287,8 +319,14 @@ export const IncidentListView: React.FC = () => {
         
         {/* Empty State */}
         {filteredIncidents.length === 0 && (
-          <div className="py-16 text-center text-slate-500">
-            <p className="text-sm font-medium">No incidents matched your filter selection.</p>
+          <div className="py-24 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+            </div>
+            <h3 className="text-lg font-bold text-white tracking-tight">System Healthy</h3>
+            <p className="text-sm text-slate-500 mt-2 max-w-sm leading-relaxed">
+              No active incidents match your criteria. All monitored systems are operating within normal parameters.
+            </p>
           </div>
         )}
 

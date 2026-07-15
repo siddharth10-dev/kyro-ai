@@ -20,7 +20,7 @@ export const LogStreamView: React.FC = () => {
 
   // Add random incoming logs to simulate live stream
   useEffect(() => {
-    const services = ['checkout-service', 'auth-service', 'db-primary', 'api-gateway', 'sentinel-backend'];
+    const services = ['checkout-service', 'auth-service', 'db-primary', 'api-gateway', 'kyro-backend'];
     const actions = [
       'Accessing health check',
       'Database connection verified successfully',
@@ -65,7 +65,7 @@ export const LogStreamView: React.FC = () => {
         <div className="bg-slate-950 px-6 py-4 flex items-center justify-between border-b border-darkBorder/40">
           <div className="flex items-center space-x-2 text-xs font-mono text-slate-400">
             <Terminal className="w-4 h-4 text-blue-500" />
-            <span>tail -f sentinel_aggregate_stream.log</span>
+            <span>tail -f kyro_aggregate_stream.log</span>
           </div>
           <button
             onClick={handleCopy}

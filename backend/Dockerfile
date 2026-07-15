@@ -5,7 +5,7 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 RUN git config --global --add safe.directory /app
-RUN mkdir -p /var/log/sentinel
+RUN mkdir -p /var/log/kyro
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

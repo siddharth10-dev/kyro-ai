@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from core.llm import llm
+from core.llm import llm, clean_content
 from app.utils.vector_store import RunbookVectorStore
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ System Evidence: {evidence}
             ("human", prompt)
         ])
 
-        content = response.content.strip()
+        content = clean_content(response.content)
         try:
             return json.loads(content)
         except Exception:

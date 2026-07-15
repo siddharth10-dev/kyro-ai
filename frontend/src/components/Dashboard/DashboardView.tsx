@@ -80,10 +80,21 @@ export const DashboardView: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex-1 bg-darkBg p-8 flex flex-col justify-center items-center text-slate-400">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-sm font-medium">Loading SRE Dashboard...</p>
-      </div>
+      <main className="flex-1 bg-[#090D16] p-8 overflow-y-auto w-full max-w-7xl mx-auto space-y-8">
+        <div className="h-8 bg-slate-900 rounded w-48 animate-pulse mb-2"></div>
+        <div className="h-4 bg-slate-900/50 rounded w-64 animate-pulse"></div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-slate-900/20 border border-slate-800 rounded-lg p-5 h-32 animate-pulse"></div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 bg-slate-900/20 border border-slate-800 rounded-lg p-6 h-96 animate-pulse"></div>
+          <div className="bg-slate-900/20 border border-slate-800 rounded-lg p-6 h-96 animate-pulse"></div>
+        </div>
+      </main>
     );
   }
 
@@ -92,7 +103,7 @@ export const DashboardView: React.FC = () => {
       <div className="flex-1 bg-darkBg p-8 flex flex-col justify-center items-center text-rose-500">
         <AlertTriangle className="w-8 h-8 mb-4 animate-bounce" />
         <p className="text-sm font-semibold">Failed to fetch backend data.</p>
-        <p className="text-xs text-slate-500 mt-2">Is the Sentinel backend running at http://localhost:8000?</p>
+        <p className="text-xs text-slate-500 mt-2">Is the Kyro backend running at http://localhost:8000?</p>
       </div>
     );
   }
@@ -108,9 +119,9 @@ export const DashboardView: React.FC = () => {
         <div className="flex items-center space-x-3">
           <button
             onClick={() => setIsLodgeOpen(true)}
-            className="px-4 py-2 bg-rose-600 hover:bg-rose-750 text-white text-sm font-semibold rounded flex items-center space-x-2 transition-colors shadow-lg shadow-rose-600/10"
+            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded flex items-center space-x-2 transition-colors shadow-lg shadow-amber-600/10"
           >
-            <span>+ Lodge Incident</span>
+            <span>⚡ Simulation Control Panel</span>
           </button>
           <Link 
             to="/incidents" 
@@ -248,9 +259,12 @@ export const DashboardView: React.FC = () => {
             })}
             
             {incidents.length === 0 && (
-              <div className="h-48 flex flex-col justify-center items-center text-slate-500">
-                <CheckCircle2 className="w-8 h-8 text-slate-600 mb-2" />
-                <p className="text-xs">All clear. No active alerts recorded.</p>
+              <div className="h-48 flex flex-col justify-center items-center text-center px-4">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-3">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                </div>
+                <p className="text-sm font-bold text-white tracking-wide">All Clear</p>
+                <p className="text-xs text-slate-500 mt-1 max-w-xs">No active alerts recorded across your infrastructure.</p>
               </div>
             )}
           </div>

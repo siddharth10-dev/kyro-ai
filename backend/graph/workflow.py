@@ -141,7 +141,7 @@ def create_incident_workflow():
     return workflow.compile()
     
 
-sentinel_graph = create_incident_workflow()
+kyro_graph = create_incident_workflow()
 
 
 

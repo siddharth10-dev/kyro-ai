@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN mkdir -p /var/log/sentinel
+RUN mkdir -p /var/log/kyro
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

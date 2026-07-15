@@ -19,11 +19,11 @@ export const Header: React.FC<HeaderProps> = () => {
       {/* Left: Logo and Nav Links */}
       <div className="flex items-center space-x-8">
         <div className="flex items-center space-x-2">
-          {/* Custom Sentinel AI Shield Icon */}
+          {/* Custom Kyro AI Shield Icon */}
           <div className="w-6 h-6 rounded bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <span className="text-white text-xs font-bold font-mono">S</span>
+            <span className="text-white text-xs font-bold font-mono">K</span>
           </div>
-          <span className="text-white font-bold text-lg tracking-tight">Sentinel AI</span>
+          <span className="text-white font-bold text-lg tracking-tight">Kyro AI</span>
         </div>
 
         <nav className="flex space-x-6">

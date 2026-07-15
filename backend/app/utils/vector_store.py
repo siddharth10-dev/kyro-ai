@@ -3,7 +3,7 @@ import json
 import hashlib
 import math
 import logging
-from langchain_ollama import OllamaEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +28,9 @@ class RunbookVectorStore:
         else:
             self.cache_path = os.path.join(self.runbooks_dir, "runbooks_embeddings.json") if self.runbooks_dir else "./runbooks_embeddings.json"
 
-        # Initialize Ollama Embeddings
-        ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-        self.embeddings = OllamaEmbeddings(
-            model="nomic-embed-text",
-            base_url=ollama_host
+        # Initialize Google Generative AI Embeddings
+        self.embeddings = GoogleGenerativeAIEmbeddings(
+            model="models/embedding-001"
         )
 
     def _get_hash(self, content: str) -> str:

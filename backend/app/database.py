@@ -4,7 +4,7 @@ import datetime
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, JSON
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@postgres:5432/sentinel")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@postgres:5432/kyro")
 
 Base = declarative_base()
 
@@ -118,6 +118,45 @@ def update_incident_status(incident_id: int, status: str, communication_data: di
         logging.error(f"Error updating incident status: {e}")
         return None
 
+    finally:
+        session.close()
+
+def update_incident_state(incident_id: int, state: dict) -> bool:
+    global SessionLocal
+    if SessionLocal is None:
+        init_db()
+    if SessionLocal is None:
+        return False
+        
+    session = SessionLocal()
+    try:
+        record = session.query(IncidentRecord).filter(IncidentRecord.id == incident_id).first()
+        if not record:
+            return False
+            
+        if "classification" in state and state["classification"]:
+            record.category = state["classification"].get("category", record.category)
+            record.priority = state["classification"].get("priority", record.priority)
+            record.summary = state["classification"].get("summary", record.summary)
+            
+        if "investigation" in state:
+            record.investigation = state["investigation"]
+        if "root_cause" in state:
+            record.root_cause = state["root_cause"]
+        if "runbook" in state:
+            record.runbook = state["runbook"]
+        if "recommendation" in state:
+            record.recommendation = state["recommendation"]
+        if "timeline" in state:
+            record.timeline = state["timeline"]
+        if "status" in state:
+            record.status = state["status"]
+            
+        session.commit()
+        return True
+    except Exception as e:
+        logging.error(f"Error updating incident state: {e}")
+        return False
     finally:
         session.close()
 

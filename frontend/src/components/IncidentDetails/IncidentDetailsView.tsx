@@ -77,8 +77,9 @@ export const IncidentDetailsView: React.FC = () => {
       return res.data;
     },
     refetchInterval: (query) => {
-      // Poll faster if it is pending approval to capture immediate state transitions
-      return query.state.data?.status === 'pending_approval' ? 3000 : 10000;
+      // Poll faster if it is investigating or pending approval to capture immediate state transitions
+      const status = query.state.data?.status;
+      return (status === 'investigating' || status === 'pending_approval') ? 2000 : 10000;
     }
   });
 
@@ -155,6 +156,25 @@ export const IncidentDetailsView: React.FC = () => {
   const isResolved = incident.status === 'resolved' || incident.status === 'approved';
   const isRejected = incident.status === 'rejected';
   const isCritical = incident.severity === 'critical' || incident.severity === 'error';
+
+  const investigation = incident.investigation || {};
+  const logs = investigation.logs || [];
+  const metrics = investigation.metrics || {};
+  const deployment = investigation.deployment || { latest_commit: 'Fetching commit details...' };
+
+  const rootCause = incident.root_cause || {};
+  const rootCauseTitle = rootCause.root_cause || 'Analyzing logs & tracing events...';
+  const confidence = rootCause.confidence || 0;
+  const reasoning = rootCause.reasoning || [];
+
+  const runbook = incident.runbook || {};
+  const matchedRunbook = runbook.matched_runbook || 'Searching RAG for matching runbook...';
+  const recommendedSteps = runbook.recommended_steps || [];
+
+  const recommendation = incident.recommendation || {};
+  const risk = recommendation.risk || 'Analyzing...';
+  const impact = recommendation.impact || 'Kyro AI is assessing risk and mitigation impact...';
+  const actions = recommendation.actions || [];
 
   return (
     <div className="flex flex-1 bg-darkBg">
@@ -241,17 +261,17 @@ export const IncidentDetailsView: React.FC = () => {
             </div>
 
             {/* Tab Panels */}
-            <div className="bg-[#040810] border border-darkBorder rounded-lg overflow-hidden backdrop-blur-md">
+            <div className="bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-2xl overflow-hidden shadow-xl">
               {activeTab === 'logs' && (
                 <div>
                   {/* Terminal Header */}
-                  <div className="bg-slate-950/80 px-4 py-3 flex items-center justify-between border-b border-darkBorder/40">
+                  <div className="bg-white/[0.03] px-4 py-3 flex items-center justify-between border-b border-white/[0.08]">
                     <div className="flex items-center space-x-2 text-xs font-mono text-slate-400">
                       <Terminal className="w-3.5 h-3.5 text-blue-500" />
                       <span>tail -f {incident.service}.log</span>
                     </div>
                     <button
-                      onClick={() => copyToClipboard(incident.investigation.logs.join('\n'), setCopiedLogs)}
+                      onClick={() => copyToClipboard(logs.join('\n'), setCopiedLogs)}
                       className="text-xs text-slate-400 hover:text-white flex items-center space-x-1.5 transition-colors px-2 py-1 rounded bg-slate-900 border border-darkBorder"
                     >
                       {copiedLogs ? <Check className="w-3 h-3 text-emerald-400" /> : <Clipboard className="w-3 h-3" />}
@@ -261,13 +281,13 @@ export const IncidentDetailsView: React.FC = () => {
                   
                   {/* Terminal Body */}
                   <div className="p-5 font-mono text-xs overflow-y-auto max-h-96 leading-relaxed select-text space-y-1.5 h-80">
-                    {incident.investigation.logs.map((logLine, idx) => {
+                    {logs.map((logLine, idx) => {
                       let colorClass = 'text-slate-400';
                       if (logLine.includes('[ERROR]') || logLine.includes('Exception') || logLine.includes('Failed')) {
                         colorClass = 'text-rose-400 font-semibold';
                       } else if (logLine.includes('[WARNING]')) {
                         colorClass = 'text-amber-400';
-                      } else if (logLine.includes('SENTINEL:')) {
+                      } else if (logLine.includes('KYRO:')) {
                         colorClass = 'text-emerald-400 font-semibold';
                       } else if (logLine.includes('[DEBUG]')) {
                         colorClass = 'text-slate-500';
@@ -301,8 +321,8 @@ export const IncidentDetailsView: React.FC = () => {
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {Object.entries(incident.investigation.metrics).map(([key, val]) => (
-                      <div key={key} className="bg-slate-950/40 border border-darkBorder rounded p-4">
+                    {Object.entries(metrics).map(([key, val]) => (
+                      <div key={key} className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-4">
                         <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider font-mono">{key}</span>
                         <div className="text-xl font-bold text-white font-mono mt-1">{val}</div>
                       </div>
@@ -318,9 +338,9 @@ export const IncidentDetailsView: React.FC = () => {
                     <span>Deployment Artifacts Metadata</span>
                   </div>
                   
-                  <div className="bg-slate-950/40 border border-darkBorder rounded p-5 space-y-3">
+                  <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-5 space-y-3">
                     <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider font-mono">Latest Commit</span>
-                    <div className="font-mono text-sm text-blue-400">{incident.investigation.deployment.latest_commit}</div>
+                    <div className="font-mono text-sm text-blue-400">{deployment.latest_commit}</div>
                     <div className="text-xs text-slate-500 leading-relaxed mt-2">
                       Automatically resolved latest commit reference from Git metadata tags in checkout repository.
                     </div>
@@ -330,13 +350,12 @@ export const IncidentDetailsView: React.FC = () => {
             </div>
 
             {/* Bottom Timeline Section */}
-            <div className="bg-darkCard/40 border border-darkBorder rounded-lg p-6 backdrop-blur-md">
-              <h3 className="text-sm font-bold text-slate-400 tracking-wider uppercase pb-4 border-b border-darkBorder/40">
-                Investigation Timeline
+            <div className="bg-white/[0.02] backdrop-blur-md border border-white/[0.08] rounded-2xl p-6 shadow-2xl relative">
+              <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase pb-4 border-b border-white/[0.08]">
+                Investigation Timeline & Audit Trail
               </h3>
               
-              {/* Horizontal / Flex timeline */}
-              <div className="mt-6 flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-4 relative px-4">
+              <div className="mt-6 relative pl-6 border-l border-white/[0.08] space-y-4">
                 {incident.timeline.map((step, idx) => {
                   const [time, ...descParts] = step.split(' ');
                   const desc = descParts.join(' ');
@@ -346,36 +365,27 @@ export const IncidentDetailsView: React.FC = () => {
                   const isStepPending = isPending && isLast;
 
                   return (
-                    <div key={idx} className="flex items-center md:flex-col md:text-center flex-row space-x-4 md:space-x-0 relative flex-1">
-                      {/* Check icon or empty circle */}
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center border z-10 ${
-                        isStepPending 
-                          ? 'bg-amber-950/30 border-amber-500 text-amber-500 pulse-glow-amber' 
-                          : isResolved && isLast 
-                          ? 'bg-emerald-950/30 border-emerald-500 text-emerald-500 shadow-lg shadow-emerald-500/10'
-                          : 'bg-slate-900 border-slate-700 text-slate-400'
-                      }`}>
-                        {isStepPending ? (
-                          <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-                        ) : isResolved && isLast ? (
-                          <Check className="w-4 h-4 text-emerald-400" />
-                        ) : (
-                          <Check className="w-4 h-4 text-slate-400" />
-                        )}
-                      </div>
-
-                      {/* Text */}
-                      <div className="md:mt-3 mt-0 text-left md:text-center">
-                        <div className="text-sm font-semibold text-white leading-tight">{desc}</div>
-                        <div className="text-xs text-slate-500 font-mono mt-1">
-                          {time.includes(':') ? time : 'System Event'}
+                    <div key={idx} className="relative flex items-center justify-between gap-4">
+                      {/* Vertical connector bubble */}
+                      <div className="absolute -left-[31.5px] top-1/2 -translate-y-1/2">
+                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center border-2 z-10 ${
+                          isStepPending 
+                            ? 'bg-[#0E131F] border-amber-500 shadow-[0_0_8px_#f59e0b]' 
+                            : 'bg-emerald-500/20 border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
+                        }`}>
+                          {isStepPending && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                          )}
                         </div>
                       </div>
 
-                      {/* Horizontal Connector Line */}
-                      {idx < incident.timeline.length - 1 && (
-                        <div className="hidden md:block absolute left-[55%] top-[15px] right-[-45%] h-[1px] bg-slate-800" />
-                      )}
+                      {/* Timeline Card */}
+                      <div className="flex-grow flex items-center justify-between bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.05] rounded-xl p-3 px-4 transition-all duration-300">
+                        <span className="text-xs font-semibold text-slate-200">{desc}</span>
+                        <span className="text-[10px] font-mono text-slate-500 bg-white/[0.04] px-2 py-0.5 rounded-md">
+                          {time.includes(':') ? time : 'System'}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
@@ -391,7 +401,7 @@ export const IncidentDetailsView: React.FC = () => {
                     <span>Human Approval Required</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-1 leading-relaxed max-w-lg">
-                    Sentinel AI has diagnosed the issue and generated recovery recommendations. Please review and Approve to execute resolutions, or Reject to cancel.
+                    Kyro AI has diagnosed the issue and generated recovery recommendations. Please review and Approve to execute resolutions, or Reject to cancel.
                   </p>
                 </div>
                 <div className="flex items-center space-x-3 shrink-0">
@@ -500,27 +510,27 @@ export const IncidentDetailsView: React.FC = () => {
           <div className="space-y-6">
             
             {/* Card 1: ROOT CAUSE ANALYSIS */}
-            <div className="bg-darkCard/60 border border-darkBorder rounded-lg p-6 backdrop-blur-md">
-              <div className="flex items-center justify-between pb-4 border-b border-darkBorder/40">
+            <div className="bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-2xl p-6 shadow-xl">
+              <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Root Cause Analysis</span>
-                <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/40">
-                  {Math.round(incident.root_cause.confidence * 100)}% Confidence
+                <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-white/[0.08] text-slate-400 border border-white/[0.08]">
+                  {Math.round(confidence * 100)}% Confidence
                 </span>
               </div>
               
               <div className="mt-4">
-                <h3 className="text-md font-bold text-white">{incident.root_cause.root_cause}</h3>
+                <h3 className="text-md font-bold text-white">{rootCauseTitle}</h3>
                 
                 {/* Confidence bar matching Image 1 */}
-                <div className="w-full h-1.5 bg-slate-850 rounded-full mt-4 overflow-hidden">
+                <div className="w-full h-1.5 bg-white/[0.08] rounded-full mt-4 overflow-hidden">
                   <div 
                     className="h-full bg-blue-500 rounded-full shadow-[0_0_8px_#3b82f6] transition-all duration-1000"
-                    style={{ width: `${incident.root_cause.confidence * 100}%` }}
+                    style={{ width: `${confidence * 100}%` }}
                   />
                 </div>
 
                 <ul className="mt-6 space-y-3">
-                  {incident.root_cause.reasoning.map((item, idx) => (
+                  {reasoning.map((item, idx) => (
                     <li key={idx} className="flex items-start text-xs text-slate-400 leading-relaxed font-sans">
                       <div className="w-4 h-4 rounded-full bg-blue-950/20 border border-blue-800/40 flex items-center justify-center mr-2.5 mt-0.5 shrink-0">
                         <Check className="w-2.5 h-2.5 text-blue-400" />
@@ -533,23 +543,23 @@ export const IncidentDetailsView: React.FC = () => {
             </div>
 
             {/* Card 2: ACTIVE RUNBOOK */}
-            <div className="bg-darkCard/60 border border-darkBorder rounded-lg p-6 backdrop-blur-md">
-              <div className="pb-4 border-b border-darkBorder/40">
+            <div className="bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-2xl p-6 shadow-xl">
+              <div className="pb-4 border-b border-white/[0.08]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active Runbook</span>
-                <h3 className="text-sm font-semibold text-slate-300 mt-2">{incident.runbook.matched_runbook}</h3>
+                <h3 className="text-sm font-semibold text-slate-300 mt-2">{matchedRunbook}</h3>
               </div>
 
               <div className="mt-4 space-y-3">
-                {incident.runbook.recommended_steps.map((step, idx) => {
+                {recommendedSteps.map((step, idx) => {
                   const isChecked = !!checkedSteps[step];
                   return (
                     <div 
                       key={idx}
                       onClick={() => handleStepToggle(step)}
-                      className={`flex items-start p-3 rounded border cursor-pointer select-none transition-all ${
+                      className={`flex items-start p-3 rounded-xl border cursor-pointer select-none transition-all ${
                         isChecked 
-                          ? 'bg-slate-900/50 border-slate-700/60 text-slate-200' 
-                          : 'bg-slate-950/20 border-darkBorder hover:border-slate-800 text-slate-500'
+                          ? 'bg-white/[0.08] border-white/[0.15] text-slate-200' 
+                          : 'bg-white/[0.02] border-white/[0.05] hover:border-white/[0.1] text-slate-500'
                       }`}
                     >
                       <div className={`w-4 h-4 rounded border flex items-center justify-center mr-3 mt-0.5 shrink-0 transition-colors ${
@@ -567,23 +577,23 @@ export const IncidentDetailsView: React.FC = () => {
             </div>
 
             {/* Card 3: RECOMMENDATION */}
-            <div className="bg-darkCard/60 border border-darkBorder rounded-lg p-6 backdrop-blur-md">
-              <div className="flex items-center justify-between pb-4 border-b border-darkBorder/40">
+            <div className="bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-2xl p-6 shadow-xl">
+              <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Recommendation</span>
                 <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/30 uppercase tracking-wider">
-                  {incident.recommendation.risk} Risk
+                  {risk} Risk
                 </span>
               </div>
 
               <div className="mt-4 space-y-4">
                 <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                  {incident.recommendation.impact}
+                  {impact}
                 </p>
 
                 <div className="pt-2">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Actions</span>
                   <ul className="mt-2 space-y-2">
-                    {incident.recommendation.actions.map((act, idx) => (
+                    {actions.map((act, idx) => (
                       <li key={idx} className="flex items-start text-xs text-slate-300 font-sans leading-relaxed">
                         <span className="mr-2 text-blue-500">&bull;</span>
                         <span>{act}</span>

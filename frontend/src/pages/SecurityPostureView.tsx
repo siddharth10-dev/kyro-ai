@@ -77,7 +77,7 @@ export const SecurityPostureView: React.FC = () => {
           </div>
 
           <div className="bg-slate-950/60 border border-darkBorder p-4 rounded text-xs text-slate-500 mt-6 leading-relaxed">
-            All system images are automatically audited by Sentinel Guard scanning tools prior to docker-compose orchestration.
+            All system images are automatically audited by Kyro Guard scanning tools prior to docker-compose orchestration.
           </div>
         </div>
 

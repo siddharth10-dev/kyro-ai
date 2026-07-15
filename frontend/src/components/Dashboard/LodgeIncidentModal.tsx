@@ -1,80 +1,97 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { X, Play, Loader2, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { X, Play, Loader2, ShieldAlert, Activity, Database, Server, CreditCard, Cpu } from 'lucide-react';
 
 interface LodgeIncidentModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const STEPS = [
-  '🚨 Alert received & classified by AI agent...',
-  '🔍 Investigation started: inspecting container metrics...',
-  '💻 Searching Loki database: extracting service error logs...',
-  '🧠 Performing root cause analysis & checking Git deployment metadata...',
-  '📚 Searching RAG vector database for matching playbooks...',
-  '⚡ Compiling investigation report & recommendations...',
-  '🔗 Redirecting to Incident Details for human review...'
-];
-
 export const LodgeIncidentModal: React.FC<LodgeIncidentModalProps> = ({ isOpen, onClose }) => {
-  const navigate = useNavigate();
-  const [service, setService] = useState('checkout-service');
-  const [message, setMessage] = useState('');
-  const [severity, setSeverity] = useState('critical');
-  const [loading, setLoading] = useState(false);
-  const [currentStepIdx, setCurrentStepIdx] = useState(0);
-
-  // Animate steps while backend loads
-  useEffect(() => {
-    let interval: any;
-    if (loading) {
-      interval = setInterval(() => {
-        setCurrentStepIdx((prev) => {
-          if (prev < STEPS.length - 1) return prev + 1;
-          return prev;
-        });
-      }, 15000); // 15s per step matches actual Ollama processing duration
-    } else {
-      setCurrentStepIdx(0);
-    }
-    return () => clearInterval(interval);
-  }, [loading]);
+  const [loading, setLoading] = useState<string | null>(null);
+  const [message, setMessage] = useState<string>('');
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!message.trim()) return;
-
-    setLoading(true);
+  const handleSimulate = async (type: string, endpoint: string) => {
+    setLoading(type);
+    setMessage('');
     try {
+      // 1. Trigger the checkout-service simulation
+      await axios.post(`http://localhost:8001/simulate/${endpoint}?enable=true`);
+      
+      // 2. Since Alertmanager requires Docker, we send a mock Alertmanager webhook
+      // to the Kyro backend so you can watch the autonomous flow end-to-end.
+      const mockAlerts: Record<string, any> = {
+        'database-error': {
+          alertname: 'DatabaseFailure',
+          summary: 'Database connection failed',
+          description: 'Checkout service lost connection to the database.',
+          severity: 'critical'
+        },
+        'high-latency': {
+          alertname: 'HighLatency',
+          summary: 'High latency detected',
+          description: 'Average request latency has exceeded 500ms.',
+          severity: 'warning'
+        },
+        'payment-failure': {
+          alertname: 'PaymentGatewayFailure',
+          summary: 'Payment Gateway Failure',
+          description: 'Payment processing is failing.',
+          severity: 'critical'
+        },
+        'cpu-spike': {
+          alertname: 'HighCPUUsage',
+          summary: 'High CPU Usage',
+          description: 'CPU usage is above 90%.',
+          severity: 'critical'
+        },
+        'memory-leak': {
+          alertname: 'HighMemoryUsage',
+          summary: 'High Memory Usage (Leak suspected)',
+          description: 'Memory usage is above 85%.',
+          severity: 'warning'
+        }
+      };
+
+      const alertDetails = mockAlerts[endpoint];
       const res = await axios.post('http://localhost:8000/incident', {
-        service,
-        message,
-        severity
+        alerts: [
+          {
+            status: 'firing',
+            labels: {
+              alertname: alertDetails.alertname,
+              service: 'checkout-service',
+              severity: alertDetails.severity
+            },
+            annotations: {
+              summary: alertDetails.summary,
+              description: alertDetails.description
+            }
+          }
+        ]
       });
-      
+
       const newIncidentId = res.data?.incident_id;
+      setMessage(`Simulated ${type}. Initializing Kyro AI Agent...`);
       
-      // Let the steps finish loading for 500ms before navigating
       setTimeout(() => {
-        setLoading(false);
+        setLoading(null);
         onClose();
         if (newIncidentId) {
-          navigate(`/incidents/${newIncidentId}`);
-        } else {
-          // Fallback to list
-          navigate('/incidents');
+          // Force page navigation or trigger route change
+          window.location.href = `/incidents/${newIncidentId}`;
         }
-      }, 1000);
+      }, 1500);
     } catch (err) {
       console.error(err);
-      alert('Error triggering SRE AI agent. Please check backend connection.');
-      setLoading(false);
+      setMessage(`Error simulating ${type}.`);
+      setLoading(null);
     }
   };
+
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
@@ -84,7 +101,7 @@ export const LodgeIncidentModal: React.FC<LodgeIncidentModalProps> = ({ isOpen, 
         <div className="px-6 py-4 border-b border-darkBorder/40 flex items-center justify-between">
           <div className="flex items-center space-x-2 text-white">
             <ShieldAlert className="w-5 h-5 text-blue-500" />
-            <span className="font-bold text-md">Lodge SRE Incident</span>
+            <span className="font-bold text-md">Simulation Control Panel</span>
           </div>
           {!loading && (
             <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
@@ -94,115 +111,84 @@ export const LodgeIncidentModal: React.FC<LodgeIncidentModalProps> = ({ isOpen, 
         </div>
 
         {/* Content */}
-        {!loading ? (
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            {/* Service */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Service Name</label>
-              <select
-                value={service}
-                onChange={(e) => setService(e.target.value)}
-                className="w-full bg-[#090D16] border border-darkBorder rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-slate-700 cursor-pointer"
-              >
-                <option value="checkout-service">checkout-service</option>
-                <option value="auth-service">auth-service</option>
-                <option value="db-primary">db-primary</option>
-                <option value="api-gateway">api-gateway</option>
-                <option value="search-v3">search-v3</option>
-              </select>
-            </div>
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-slate-400 mb-4">
+            Trigger simulated failures in the checkout-service. Prometheus will detect the metrics anomalies, Alertmanager will fire a webhook, and Kyro AI will autonomously start investigating.
+          </p>
 
-            {/* Severity */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Severity</label>
-              <select
-                value={severity}
-                onChange={(e) => setSeverity(e.target.value)}
-                className="w-full bg-[#090D16] border border-darkBorder rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-slate-700 cursor-pointer"
-              >
-                <option value="critical">Critical</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
-            </div>
-
-            {/* Alert Message */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Alert / Error Message</label>
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="e.g. Stripe payment gateway returned HTTP 504 gateway timeout during payment checkout"
-                rows={3}
-                required
-                className="w-full bg-[#090D16] border border-darkBorder rounded px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-slate-700 resize-none"
-              />
-            </div>
-
-            {/* Actions */}
-            <div className="pt-4 flex items-center justify-end space-x-3 border-t border-darkBorder/40">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 bg-slate-900 border border-darkBorder hover:border-slate-700/60 rounded text-xs font-semibold text-slate-300 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 rounded text-xs font-bold text-white flex items-center space-x-1.5 transition-colors shadow-lg shadow-blue-600/15"
-              >
-                <Play className="w-3.5 h-3.5" />
-                <span>Launch Sentinel Agent</span>
-              </button>
-            </div>
-          </form>
-        ) : (
-          /* Live loader screen showing AI workflow */
-          <div className="p-8 flex flex-col items-center justify-center text-center space-y-6">
-            <div className="relative flex items-center justify-center">
-              <Loader2 className="w-16 h-16 text-blue-500 animate-spin" />
-              <div className="absolute w-8 h-8 rounded bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-xs font-mono font-bold text-blue-400">
-                AI
+          <div className="grid grid-cols-1 gap-3">
+            <button
+              onClick={() => handleSimulate('Database Error', 'database-error')}
+              disabled={loading !== null}
+              className="flex items-center p-4 bg-[#090D16] border border-darkBorder rounded hover:border-slate-600 transition-colors"
+            >
+              <Database className="w-5 h-5 text-red-500 mr-3" />
+              <div className="text-left">
+                <div className="text-sm font-semibold text-white">Database Connection Failure</div>
+                <div className="text-xs text-slate-500">Drops DB health to 0</div>
               </div>
-            </div>
+              {loading === 'Database Error' && <Loader2 className="ml-auto w-4 h-4 animate-spin text-blue-500" />}
+            </button>
+
+            <button
+              onClick={() => handleSimulate('High Latency', 'high-latency')}
+              disabled={loading !== null}
+              className="flex items-center p-4 bg-[#090D16] border border-darkBorder rounded hover:border-slate-600 transition-colors"
+            >
+              <Activity className="w-5 h-5 text-orange-500 mr-3" />
+              <div className="text-left">
+                <div className="text-sm font-semibold text-white">High Latency</div>
+                <div className="text-xs text-slate-500">Sleeps for 5 seconds on checkout</div>
+              </div>
+              {loading === 'High Latency' && <Loader2 className="ml-auto w-4 h-4 animate-spin text-blue-500" />}
+            </button>
+
+            <button
+              onClick={() => handleSimulate('Payment Failure', 'payment-failure')}
+              disabled={loading !== null}
+              className="flex items-center p-4 bg-[#090D16] border border-darkBorder rounded hover:border-slate-600 transition-colors"
+            >
+              <CreditCard className="w-5 h-5 text-purple-500 mr-3" />
+              <div className="text-left">
+                <div className="text-sm font-semibold text-white">Payment Gateway Failure</div>
+                <div className="text-xs text-slate-500">Payment endpoint fails</div>
+              </div>
+              {loading === 'Payment Failure' && <Loader2 className="ml-auto w-4 h-4 animate-spin text-blue-500" />}
+            </button>
+
+            <button
+              onClick={() => handleSimulate('CPU Spike', 'cpu-spike')}
+              disabled={loading !== null}
+              className="flex items-center p-4 bg-[#090D16] border border-darkBorder rounded hover:border-slate-600 transition-colors"
+            >
+              <Cpu className="w-5 h-5 text-yellow-500 mr-3" />
+              <div className="text-left">
+                <div className="text-sm font-semibold text-white">CPU Spike</div>
+                <div className="text-xs text-slate-500">Spikes CPU metric to 95%</div>
+              </div>
+              {loading === 'CPU Spike' && <Loader2 className="ml-auto w-4 h-4 animate-spin text-blue-500" />}
+            </button>
             
-            <div className="space-y-2">
-              <h4 className="text-md font-bold text-white">Sentinel Agent Active</h4>
-              <p className="text-xs text-slate-500 leading-relaxed max-w-sm">
-                Running LangGraph workflow nodes. Sentinel is executing ReAct loop steps.
-              </p>
-            </div>
-
-            {/* Animation Steps progress */}
-            <div className="w-full bg-[#090D16] border border-darkBorder rounded p-4 text-left font-mono text-xs text-slate-400 space-y-2 max-h-48 overflow-y-auto">
-              {STEPS.slice(0, currentStepIdx + 1).map((step, idx) => {
-                const isCurrent = idx === currentStepIdx;
-                return (
-                  <div key={idx} className="flex items-center space-x-2">
-                    {isCurrent ? (
-                      <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin shrink-0" />
-                    ) : (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    )}
-                    <span className={isCurrent ? 'text-white font-semibold' : 'text-slate-500'}>
-                      {step}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Hardware Inference Alert Banner */}
-            <div className="w-full p-3.5 rounded bg-amber-950/15 border border-amber-900/30 text-amber-500 text-left flex items-start space-x-2.5">
-              <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0 animate-pulse text-amber-400" />
-              <div className="text-[11px] font-sans leading-relaxed">
-                <span className="font-bold">Hardware Performance Note:</span> Local Ollama inference on Mac CPU/GPU executes LangGraph sequentially. This multi-agent trace can take <strong>2 - 3 minutes</strong> to return. Please keep this tab active.
+            <button
+              onClick={() => handleSimulate('Memory Leak', 'memory-leak')}
+              disabled={loading !== null}
+              className="flex items-center p-4 bg-[#090D16] border border-darkBorder rounded hover:border-slate-600 transition-colors"
+            >
+              <Server className="w-5 h-5 text-blue-500 mr-3" />
+              <div className="text-left">
+                <div className="text-sm font-semibold text-white">Memory Leak</div>
+                <div className="text-xs text-slate-500">Spikes Memory metric to 90%</div>
               </div>
-            </div>
+              {loading === 'Memory Leak' && <Loader2 className="ml-auto w-4 h-4 animate-spin text-blue-500" />}
+            </button>
           </div>
-        )}
+
+          {message && (
+            <div className="mt-4 text-sm text-green-400 p-3 bg-green-900/20 border border-green-800/50 rounded">
+              {message}
+            </div>
+          )}
+        </div>
 
       </div>
     </div>
